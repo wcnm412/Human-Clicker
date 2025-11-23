@@ -75,15 +75,16 @@ void printUsage(const char* program) {
 )" << "\n";
     std::cout << "Usage: " << program << " [options]\n\n"
         << "Distribution options:\n"
-        << "  --normal <mean> <stddev>        Normal distribution\n"
-        << "  --gamma <shape> <scale>         Gamma distribution (recommended)\n"
-        << "  --lognormal <mu> <sigma>        Log-normal distribution\n\n"
+        << "  --normal <mean> <stddev>                  Normal distribution\n"
+        << "  --gamma <shape> <scale>                   Gamma distribution (recommended)\n"
+        << "  --lognormal <mean> <stddev>               Log-normal distribution (note desired mean/stddev not mu/sigma)\n\n"
         << "Other options:\n"
-        << "  <distribution type> --default   Set default 12cps click speed for given distribution\n"
-        << "  --r                             Set to right click\n"
-        << "  --toggle <key>                  Set autoclicker toggle key, defaults to F6\n"
-        << "  --debug                         Set debug messages of each click\n"
-        << "  --help                          Show this help message\n\n"
+        << "  <distribution type> --default             Set default 12cps click speed for given distribution\n"
+        << "  --r                                       Set to right click\n"
+        << "  --toggle <key>                            Set autoclicker toggle key, defaults to F6\n"
+        << "  --debug                                   Set debug messages of each click\n"
+        << "  --double [--default | <mean> <stddev>]    Set clicks to double click\n"
+        << "  --help                                    Show this help message\n\n"
         << "Valid toggle keys:\n"
         << "  Function: f1, f2, f3, ... f12\n"
         << "  Letters:  a-z\n"
@@ -94,10 +95,10 @@ void printUsage(const char* program) {
         << "Examples:\n"
         << "  " << program << " --gamma 3.0 27.7\n"
         << "  " << program << " --normal 83 15 --toggle mouseright\n"
-        << "  " << program << " --uniform 60 100 --debug --r\n";
+        << "  " << program << " --uniform 60 100 --debug --r --double 10 2\n";
 }
 
-void DoClick(ClickType Click)
+void DoClick(ClickType Click, bool Double, std::function<long()> double_ms)
 {
     INPUT Inputs[2] = { 0 };
     if (Click == ClickType::RIGHT) {
@@ -113,6 +114,12 @@ void DoClick(ClickType Click)
     }
 
     SendInput(ARRAYSIZE(Inputs), Inputs, sizeof(INPUT));
+
+    if (Double && (rand() > (RAND_MAX / 20))) // 95% success rate doubleclicking mouse
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(double_ms()));
+        SendInput(ARRAYSIZE(Inputs), Inputs, sizeof(INPUT));
+    }
 }
 
 void ToggleListener(int ToggleKey)
@@ -151,6 +158,10 @@ int main(int argc, char* argv[]) {
     ClickType Click = ClickType::LEFT;
 
     int ToggleKey = VK_F6;
+
+    bool Double = false;
+    float DoubleMean = 15.0f;
+    float DoubleStdDev = 3.0f;
 
     bool Debug = false;
 
@@ -204,13 +215,21 @@ int main(int argc, char* argv[]) {
         {
             Debug = true;
         }
+        if (strcmp(argv[i], "--double") == 0)
+        {
+            Double = true;
+            if (strcmp(argv[i + 1], "--default") == 0)
+                continue;
+            DoubleMean = std::stof(argv[i + 1]);
+            DoubleStdDev = std::stof(argv[i + 2]);
+        }
     }
     
 	std::random_device rd{};
 	std::mt19937 gen{ rd() };
 
 	std::normal_distribution<> NormalDist{ Mean, StdDev };
-    std::lognormal_distribution<> LogNormalDist{ Mean, StdDev };
+    std::lognormal_distribution<> LogNormalDist{ std::log(Mean), StdDev/Mean };
     std::gamma_distribution<> GammaDist{ Shape, Scale };
     
     // set the number generation
@@ -235,13 +254,15 @@ int main(int argc, char* argv[]) {
     std::thread ToggleThread(ToggleListener, ToggleKey);
     ToggleThread.detach();
 
+    // double click interval randomiser
+	std::lognormal_distribution<> DoubleDist{ std::log(DoubleMean), DoubleStdDev/DoubleMean };
+    std::function<long()> double_ms = [&DoubleDist, &gen]{ return std::lround(DoubleDist(gen)); };
+
     while (true)
     {
         if (Clicking)
         {
             long interval = random_ms();
-            auto now = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now()).time_since_epoch().count();
-            auto latest = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now()).time_since_epoch().count();
             std::this_thread::sleep_for(std::chrono::milliseconds(interval));
             
             if (Debug)
@@ -251,7 +272,7 @@ int main(int argc, char* argv[]) {
                 std::cout << "Interval: " << interval << "ms, at: " << p.x << ' ' << p.y << '\n';
             }
 
-            DoClick(Click);
+            DoClick(Click, Double, double_ms);
         } else {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }

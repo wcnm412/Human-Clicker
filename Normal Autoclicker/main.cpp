@@ -94,7 +94,7 @@ void printUsage(const char* program) {
         << "Examples:\n"
         << "  " << program << " --gamma 3.0 27.7\n"
         << "  " << program << " --normal 83 15 --toggle mouseright\n"
-        << "  " << program << " --uniform 60 100 --debug --r --double 10 2\n";
+        << "  " << program << " --lognormal 60 100 -db -r -d 10 2\n";
 }
 
 void DoClick(ClickType Click, bool Double, std::function<long()> double_ms)

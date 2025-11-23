@@ -79,11 +79,11 @@ void printUsage(const char* program) {
         << "  --gamma [--default | <shape> <scale>]         Gamma distribution (recommended)\n"
         << "  --lognormal [--default | <mean> <stddev>]     Log-normal distribution (note desired mean/stddev not mu/sigma)\n\n"
         << "Other options:\n"
-        << "  --r                                           Set to right click\n"
-        << "  --toggle <key>                                Set autoclicker toggle key, defaults to F6\n"
-        << "  --debug                                       Set debug messages of each click\n"
-        << "  --double [--default | <mean> <stddev>]        Set clicks to double click\n"
-        << "  --help                                        Show this help message\n\n"
+        << "  -r, --right                                   Set to right click\n"
+        << "  -t, --toggle <key>                            Set autoclicker toggle key, defaults to F6\n"
+        << "  -db, --debug                                  Set debug messages of each click\n"
+        << "  -d, --double [--default | <mean> <stddev>]    Set clicks to double click\n"
+        << "  -h, --help                                    Show this help message\n\n"
         << "Valid toggle keys:\n"
         << "  Function: f1, f2, f3, ... f12\n"
         << "  Letters:  a-z\n"
@@ -141,7 +141,7 @@ int main(int argc, char* argv[]) {
     
     SetConsoleOutputCP(CP_UTF8);
 
-    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+    if (argc < 2 || strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
         printUsage(argv[0]);
         return 0;
     }
@@ -200,21 +200,21 @@ int main(int argc, char* argv[]) {
                 return -1;
             }
         }
-        if (strcmp(argv[i], "--r") == 0)
+        if (strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "--right") == 0)
         {
             Click = ClickType::RIGHT;
         }
-        if (strcmp(argv[i], "--toggle") == 0)
+        if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--toggle") == 0)
         {
             std::string ToggleKeyString = argv[i + 1]; // grab the togglekey
             std::transform(ToggleKeyString.begin(), ToggleKeyString.end(), ToggleKeyString.begin(), [](unsigned char c) { return std::tolower(c); }); // make it lower case
             ToggleKey = KeyMap[ToggleKeyString]; 
         }
-        if (strcmp(argv[i], "--debug") == 0)
+        if (strcmp(argv[i], "-db") == 0 || strcmp(argv[i], "--debug") == 0)
         {
             Debug = true;
         }
-        if (strcmp(argv[i], "--double") == 0)
+        if (strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--double") == 0)
         {
             Double = true;
             if (strcmp(argv[i + 1], "--default") == 0)

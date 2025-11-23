@@ -7,7 +7,13 @@
 #include <functional>
 #include <thread>
 #include <map>
+#include <vector>
+#include <mutex>
+#include <iomanip>
+#include <algorithm>
 #include <windows.h>
+
+#include "keymap.h"
 
 #pragma execution_character_set("utf-8")
 
